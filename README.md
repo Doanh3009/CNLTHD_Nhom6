@@ -1,20 +1,28 @@
-# Spring Boot Microservices
+# Hướng dẫn chạy dự án TechShop (Microservices + ReactJS)
 
-# ATTENTION: This repository is archived, you can find the source code in the new repository that includes much more concepts and upto date - https://github.com/SaiUpadhyayula/spring-boot-3-microservices-course
+Dự án này là một nền tảng thương mại điện tử được xây dựng dựa trên kiến trúc Spring Boot Microservices cho phần Backend và ReactJS (Vite) cho phần Frontend. Hệ thống cũng tích hợp Chatbot AI sử dụng Groq API.
 
-The link to the new tutorial can be found here - https://www.youtube.com/playlist?list=PLSVW22jAG8pDeU80nDzbUgr8qqzEMppi8
+## 🛠 Yêu cầu hệ thống (Prerequisites)
+Trước khi khởi chạy dự án, hãy đảm bảo máy của bạn đã cài đặt các công cụ sau:
+* **Docker** & **Docker Compose**
+* **Java** (JDK 17 trở lên) & **Maven**
+* **Node.js** & **npm** (hoặc yarn)
+* **GROQ API KEY** (để sử dụng dịch vụ Chatbot AI)
 
-This repository contains the latest source code of the spring-boot-microservices tutorial
+---
 
-You can watch the tutorial on Youtube here - https://www.youtube.com/watch?v=mPPhcU7oWDU&t=20634s
+## 🚀 Hướng dẫn khởi chạy dự án
 
-## How to run the application using Docker
+### Bước 1: Khởi chạy Backend (Spring Boot Microservices & Infrastructure)
 
-1. Run `mvn clean package -DskipTests` to build the applications and create the docker image locally.
-2. Run `docker-compose up -d` to start the applications.
+Hệ thống backend bao gồm nhiều service (API Gateway, Discovery Server, Order, Inventory, Product, Auth, Chatbot) cùng với các hạ tầng như Kafka, Postgres, MongoDB, Keycloak, Zipkin, Prometheus và Grafana.
 
-## How to run the application without Docker
+1. **Cấu hình biến môi trường cho Chatbot:**
+   Mở terminal và set biến môi trường cho API Key của Groq (bắt buộc để khởi tạo `chatbot-service` thành công):
+   * *Windows (PowerShell):* `$env:GROQ_API_KEY="your_api_key_here"`
+   * *Mac/Linux:* `export GROQ_API_KEY="your_api_key_here"`
 
-1. Run `mvn clean verify -DskipTests` by going inside each folder to build the applications.
-2. After that run `mvn spring-boot:run` by going inside each folder to start the applications.
-
+2. **Build các ứng dụng Spring Boot:**
+   Mở terminal tại thư mục gốc của dự án và chạy lệnh sau để build mã nguồn và tạo Docker image nội bộ:
+   ```bash
+   mvn clean package -DskipTests
