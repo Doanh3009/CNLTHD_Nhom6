@@ -28,10 +28,9 @@ public class ChatbotService {
 
     public String askQuestion(String question) {
         try {
-            // Payload theo chuẩn OpenAI/Groq
             Map<String, Object> message = new HashMap<>();
             message.put("role", "user");
-            message.put("content", "Ban la nhan vien ho tro cua TechShop. Hay tra loi ngan gon: " + question);
+            message.put("content", "Ban la nhan vien ho tro cua TechShop. Hay tra loi ngan gon bang tieng Viet: " + question);
 
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("model", modelName);
@@ -40,21 +39,21 @@ public class ChatbotService {
             Map response = webClient.post()
                     .uri(apiUrl)
                     .header("Authorization", "Bearer " + apiKey)
+                    .header("Content-Type", "application/json")
                     .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(Map.class)
                     .block();
 
-            // Trich xuat ket qua tu cau truc JSON cua Groq
             if (response != null && response.containsKey("choices")) {
                 List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
                 Map<String, Object> firstChoice = choices.get(0);
                 Map<String, Object> resMessage = (Map<String, Object>) firstChoice.get("message");
                 return resMessage.get("content").toString();
             }
-            
+
             return "Khong the nhan phan hoi tu chatbot.";
-            
+
         } catch (Exception e) {
             return "He thong chatbot dang bao tri. Vui long thu lai sau.";
         }
