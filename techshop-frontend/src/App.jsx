@@ -1,0 +1,1 @@
+﻿export default function App() { return <div style={{padding: '50px', background: 'blue', color: 'white', fontSize: '40px', fontWeight: 'bold', textAlign: 'center'}}>CHẠY THÀNH CÔNG RỒI KHANG ƠI!</div>; }
