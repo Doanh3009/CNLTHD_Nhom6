@@ -29,7 +29,7 @@ const CheckoutPage = () => {
     try {
       const response = await api.post('/order', orderPayload);
       setMessage(response.data || "Đặt hàng thành công!");
-    } catch (error) {
+    } catch {
       setMessage("Có lỗi xảy ra khi đặt hàng. Vui lòng kiểm tra lại đăng nhập hoặc số lượng kho.");
     } finally {
       setLoading(false);

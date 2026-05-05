@@ -1,1 +1,1 @@
-CREATE DATABASE IF NOT EXISTS 'order-service';
+-- Schema is managed by Hibernate for the coursework environment.

@@ -21,6 +21,8 @@ spec:
               value: ' TRACE'
             - name: SPRING_PROFILES_ACTIVE
               value: docker
+            - name: JWT_SECRET
+              value: TechShopJwtSecretKeyForHS512MustBeAtLeastSixtyFourBytesLong2026!
           image: saiupadhyayula007/api-gateway:latest
           name: api-gateway
           ports:
@@ -46,4 +48,3 @@ spec:
     app: api-gateway
 status:
   loadBalancer: {}
-

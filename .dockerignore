@@ -1,0 +1,12 @@
+.git
+**/target
+**/node_modules
+**/dist
+**/.vite
+mongo-data
+postgres-auth
+postgres-inventory
+postgres-order
+mysql_keycloak_data
+grafana
+*.log

@@ -1,16 +1,11 @@
 import axios from 'axios';
 
-const api = axios.create({
-  baseURL: 'http://localhost:8181/api', // Cổng Gateway
-});
+const API_URL = 'http://localhost:8181/api/auth';
 
-// Tự động đính kèm Token vào Header nếu đã đăng nhập
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+export const loginUser = async (credentials) => {
+  return axios.post(`${API_URL}/login`, credentials);
+};
 
-export default api;
+export const registerUser = async (userData) => {
+  return axios.post(`${API_URL}/register`, userData);
+};

@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: postgres-auth
+  name: postgres-auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-auth
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: postgres-auth
+    spec:
+      containers:
+        - args:
+            - -p
+            - "5433"
+          env:
+            - name: PGDATA
+              value: /data/postgres
+            - name: POSTGRES_DB
+              value: auth-service
+            - name: POSTGRES_PASSWORD
+              value: password
+            - name: POSTGRES_USER
+              value: ptechie
+          image: postgres
+          name: postgres-auth
+          ports:
+            - containerPort: 5433
+          volumeMounts:
+            - mountPath: /data/postgres
+              name: postgres-auth-claim0
+      restartPolicy: Always
+      volumes:
+        - name: postgres-auth-claim0
+          persistentVolumeClaim:
+            claimName: postgres-auth-claim0
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: postgres-auth
+  name: postgres-auth
+spec:
+  ports:
+    - name: "5433"
+      port: 5433
+      targetPort: 5433
+  selector:
+    app: postgres-auth
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: postgres-auth-claim0
+  name: postgres-auth-claim0
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi

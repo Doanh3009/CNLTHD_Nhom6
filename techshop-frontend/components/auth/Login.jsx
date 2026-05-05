@@ -11,7 +11,7 @@ const Login = () => {
       const res = await api.post('/auth/login', form);
       localStorage.setItem('token', res.data.token);
       window.location.href = '/';
-    } catch (err) {
+    } catch {
       setError('Tên đăng nhập hoặc mật khẩu không chính xác.');
     }
   };

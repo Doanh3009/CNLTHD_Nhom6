@@ -36,7 +36,7 @@ spec:
   ports:
     - name: "80"
       port: 80
-      targetPort: 9194
+      targetPort: 8080
   selector:
     app: product-service
 status:

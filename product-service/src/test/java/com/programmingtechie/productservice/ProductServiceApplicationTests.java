@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 
@@ -22,6 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Testcontainers(disabledWithoutDocker = true)
 class ProductServiceApplicationTests {
 
     @Container
@@ -33,10 +35,6 @@ class ProductServiceApplicationTests {
     @Autowired
     private ProductRepository productRepository;
 
-    static {
-        mongoDBContainer.start();
-    }
-
     @DynamicPropertySource
     static void setProperties(DynamicPropertyRegistry dymDynamicPropertyRegistry) {
         dymDynamicPropertyRegistry.add("spring.data.mongodb.uri", mongoDBContainer::getReplicaSetUrl);
@@ -44,6 +42,7 @@ class ProductServiceApplicationTests {
 
     @Test
     void shouldCreateProduct() throws Exception {
+        productRepository.deleteAll();
         ProductRequest productRequest = getProductRequest();
         String productRequestString = objectMapper.writeValueAsString(productRequest);
         mockMvc.perform(MockMvcRequestBuilders.post("/api/product")
@@ -55,9 +54,13 @@ class ProductServiceApplicationTests {
 
     private ProductRequest getProductRequest() {
         return ProductRequest.builder()
+                .skuCode("iphone_13")
                 .name("iPhone 13")
                 .description("iPhone 13")
                 .price(BigDecimal.valueOf(1200))
+                .category("iPhone")
+                .brand("Apple")
+                .active(true)
                 .build();
     }
 

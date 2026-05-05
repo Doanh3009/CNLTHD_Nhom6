@@ -15,7 +15,7 @@ const Register = () => {
       await api.post('/auth/register', form);
       setSuccess('Đăng ký thành công! Đang chuyển hướng...');
       setTimeout(() => navigate('/login'), 2000);
-    } catch (err) {
+    } catch {
       setError('Có lỗi xảy ra, tên đăng nhập hoặc email có thể đã tồn tại.');
     }
   };

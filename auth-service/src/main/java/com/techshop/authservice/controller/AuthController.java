@@ -7,16 +7,16 @@ import com.techshop.authservice.model.User;
 import com.techshop.authservice.repository.UserRepository;
 import com.techshop.authservice.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDateTime;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -29,46 +29,46 @@ public class AuthController {
     private final JwtTokenProvider tokenProvider;
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest loginRequest) {
-        // Xac thuc thong tin dang nhap
+    public ResponseEntity<AuthResponse> authenticateUser(@RequestBody LoginRequest loginRequest) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.getUsername(),
-                        loginRequest.getPassword()
-                )
-        );
+                        loginRequest.getPassword()));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        
-        // Tao JWT token
         String jwt = tokenProvider.generateToken(authentication);
-        
-        return ResponseEntity.ok(new AuthResponse(jwt, "Dang nhap thanh cong"));
+
+        return ResponseEntity.ok(new AuthResponse(jwt, "Login successful"));
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegisterRequest registerRequest) {
-        // Kiem tra ton tai username
+    public ResponseEntity<String> registerUser(@RequestBody RegisterRequest registerRequest) {
+        if (isBlank(registerRequest.getUsername())
+                || isBlank(registerRequest.getEmail())
+                || isBlank(registerRequest.getPassword())) {
+            return ResponseEntity.badRequest().body("Username, email and password are required");
+        }
+
         if (userRepository.existsByUsername(registerRequest.getUsername())) {
-            return new ResponseEntity<>("Ten dang nhap da ton tai", HttpStatus.BAD_REQUEST);
+            return ResponseEntity.badRequest().body("Username is already used");
         }
 
-        // Kiem tra ton tai email
         if (userRepository.existsByEmail(registerRequest.getEmail())) {
-            return new ResponseEntity<>("Email da duoc su dung", HttpStatus.BAD_REQUEST);
+            return ResponseEntity.badRequest().body("Email is already used");
         }
 
-        // Tao user moi va hash password
-        User user = User.builder()
-                .username(registerRequest.getUsername())
-                .email(registerRequest.getEmail())
-                .password(passwordEncoder.encode(registerRequest.getPassword()))
-                .role("USER")
-                .createdAt(LocalDateTime.now())
-                .build();
+        User user = new User();
+        user.setUsername(registerRequest.getUsername().trim());
+        user.setEmail(registerRequest.getEmail().trim().toLowerCase());
+        user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+        user.setRole("ROLE_USER");
 
         userRepository.save(user);
 
-        return ResponseEntity.ok("Dang ky tai khoan thanh cong");
+        return ResponseEntity.ok("Register successful");
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }

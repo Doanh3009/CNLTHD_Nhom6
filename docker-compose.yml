@@ -1,6 +1,13 @@
----
-version: '3.7'
 services:
+  frontend:
+    container_name: techshop-frontend
+    image: microservices-tutorial/techshop-frontend:latest
+    build: ./techshop-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - api-gateway
+
   ## MySQL Docker Compose Config
   postgres-order:
     container_name: postgres-order
@@ -31,6 +38,23 @@ services:
       - ./postgres-inventory:/data/postgres
     ports:
       - "5432:5432"
+    restart: always
+
+  postgres-auth:
+    container_name: postgres-auth
+    image: postgres
+    environment:
+      POSTGRES_DB: auth-service
+      POSTGRES_USER: ptechie
+      POSTGRES_PASSWORD: password
+      PGDATA: /data/postgres
+    volumes:
+      - ./postgres-auth:/data/postgres
+    expose:
+      - "5433"
+    ports:
+      - "5433:5433"
+    command: -p 5433
     restart: always
 
   ## Mongo Docker Compose Config
@@ -111,6 +135,9 @@ services:
   ## Eureka Server
   discovery-server:
     image: microservices-tutorial/discovery-server:latest
+    build:
+      context: .
+      dockerfile: discovery-server/Dockerfile
     container_name: discovery-server
     ports:
       - "8761:8761"
@@ -121,34 +148,40 @@ services:
 
   api-gateway:
     image: microservices-tutorial/api-gateway:latest
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
     container_name: api-gateway
     ports:
       - "8181:8080"
-    expose:
-      - "8181"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY= TRACE
+      - JWT_SECRET=TechShopJwtSecretKeyForHS512MustBeAtLeastSixtyFourBytesLong2026!
     depends_on:
-      - zipkin
       - discovery-server
-      - keycloak
+      - auth-service # Thêm dòng này
+      - product-service
 
   ## Product-Service Docker Compose Config
   product-service:
     container_name: product-service
     image: microservices-tutorial/product-service:latest
+    build:
+      context: .
+      dockerfile: product-service/Dockerfile
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     depends_on:
       - mongo
       - discovery-server
-      - api-gateway
 
   ## Order-Service Docker Compose Config
   order-service:
     container_name: order-service
     image: microservices-tutorial/order-service:latest
+    build:
+      context: .
+      dockerfile: order-service/Dockerfile
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-order:5431/order-service
@@ -157,31 +190,34 @@ services:
       - broker
       - zipkin
       - discovery-server
-      - api-gateway
 
   ## Inventory-Service Docker Compose Config
   inventory-service:
     container_name: inventory-service
     image: microservices-tutorial/inventory-service:latest
+    build:
+      context: .
+      dockerfile: inventory-service/Dockerfile
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-inventory:5432/inventory-service
     depends_on:
       - postgres-inventory
       - discovery-server
-      - api-gateway
 
   ## Notification-Service Docker Compose Config
   notification-service:
     container_name: notification-service
     image: microservices-tutorial/notification-service:latest
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     depends_on:
       - zipkin
       - broker
       - discovery-server
-      - api-gateway
 
   ## Prometheus
   prometheus:
@@ -214,19 +250,24 @@ services:
   auth-service:
     container_name: auth-service
     image: microservices-tutorial/auth-service:latest
-    build: ./auth-service
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-order:5431/auth_db
+      # Đổi thành database order-service nếu bạn chưa tạo db riêng tên auth_db
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-auth:5433/auth-service
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
-      - JWT_SECRET=mysecretkey123456789012345678901234567890
+      - JWT_SECRET=TechShopJwtSecretKeyForHS512MustBeAtLeastSixtyFourBytesLong2026!
     depends_on:
-      - postgres-order
+      - postgres-auth
       - discovery-server
   chatbot-service:
     container_name: chatbot-service
     image: microservices-tutorial/chatbot-service:latest
-    build: ./chatbot-service
+    build:
+      context: .
+      dockerfile: chatbot-service/Dockerfile
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka

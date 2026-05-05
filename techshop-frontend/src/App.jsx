@@ -25,7 +25,8 @@ const CATEGORIES = ['Tất cả', 'iPhone', 'Mac', 'iPad', 'Watch', 'Audio', 'An
 /* ============================================================
    API
    ============================================================ */
-const API_BASE = 'http://localhost:8181/api';
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+const API_ENABLED = Boolean(API_BASE);
 const apiFetch = axios.create({ baseURL: API_BASE });
 apiFetch.interceptors.request.use(c => {
   const t = localStorage.getItem('token');
@@ -589,7 +590,13 @@ function LoginPage({ addToast }) {
   const navigate = useNavigate();
 
   const submit = async (e) => {
-    e.preventDefault(); setErr(''); setLoading(true);
+    e.preventDefault(); setErr('');
+    if (!API_ENABLED) {
+      setErr('Backend API chưa được cấu hình. Bật VITE_API_BASE_URL để đăng nhập.');
+      addToast('Backend API chưa được cấu hình', 'warning');
+      return;
+    }
+    setLoading(true);
     try {
       const res = await axios.post(`${API_BASE}/auth/login`, form);
       localStorage.setItem('token', res.data.token);
@@ -662,7 +669,12 @@ function RegisterPage({ addToast }) {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-    setErrors({}); setLoading(true);
+    setErrors({});
+    if (!API_ENABLED) {
+      addToast('Backend API chưa được cấu hình. Bật VITE_API_BASE_URL để đăng ký.', 'warning');
+      return;
+    }
+    setLoading(true);
     try {
       await axios.post(`${API_BASE}/auth/register`, form);
       addToast('Đăng ký thành công! Đang chuyển hướng...', 'success');
@@ -716,23 +728,43 @@ function CheckoutPage({ cart, updateQty, removeItem, total, clearCart, addToast 
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [info, setInfo] = useState({ name: '', phone: '', address: '', note: '' });
+  const [orderResult, setOrderResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { if (!localStorage.getItem('token')) navigate('/login'); }, []);
+  useEffect(() => { if (!localStorage.getItem('token')) navigate('/login'); }, [navigate]);
 
   const handleOrder = async () => {
     if (!info.name || !info.phone || !info.address) { addToast('Vui lòng điền đầy đủ thông tin giao hàng', 'warning'); return; }
+    if (!API_ENABLED) {
+      addToast('Backend API chưa được cấu hình. Chưa thể gửi đơn hàng thật.', 'warning');
+      return;
+    }
     setLoading(true);
     try {
-      const payload = { orderLineItemsDtoList: cart.map(i => ({ skuCode: i.skuCode || i.id, price: i.price, quantity: i.qty })) };
-      await apiFetch.post('/order', payload);
-    } catch (err) {
-      if (err.response?.status === 401) { navigate('/login'); return; }
-      // Demo: vẫn cho xem thành công nếu BE lỗi
-    } finally {
-      setLoading(false);
+      const payload = {
+        customerName: info.name,
+        customerPhone: info.phone,
+        shippingAddress: info.address,
+        note: info.note,
+        paymentMethod: 'COD',
+        orderLineItemsDtoList: cart.map(i => ({
+          skuCode: i.skuCode || i.id,
+          productName: i.name,
+          price: i.price,
+          quantity: i.qty
+        }))
+      };
+      const res = await apiFetch.post('/order', payload);
+      setOrderResult(res.data);
       clearCart();
       setStep(3);
+      addToast('Đặt hàng thành công!', 'success');
+    } catch (err) {
+      if (err.response?.status === 401) { navigate('/login'); return; }
+      const message = err.response?.data?.message || err.response?.data || 'Không thể đặt hàng. Vui lòng kiểm tra tồn kho hoặc thử lại sau.';
+      addToast(message, 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -743,6 +775,7 @@ function CheckoutPage({ cart, updateQty, removeItem, total, clearCart, addToast 
         <h2 style={{ fontSize: 28, fontWeight: 800, color: '#1d1d1f', margin: '0 0 14px', letterSpacing: -0.5 }}>Đặt hàng thành công!</h2>
         <p style={{ fontSize: 16, color: '#6e6e73', margin: '0 0 40px', lineHeight: 1.65 }}>
           Cảm ơn bạn đã tin tưởng TechShop!<br />
+          {orderResult?.orderNumber && <>Mã đơn hàng: <strong>{orderResult.orderNumber}</strong><br /></>}
           Chúng tôi sẽ liên hệ xác nhận đơn hàng trong vòng 30 phút.
         </p>
         <button onClick={() => navigate('/')} style={{ ...S.primaryBtnFull, height: 48, fontSize: 16 }}>Tiếp tục mua sắm</button>
@@ -891,6 +924,11 @@ function ChatPage() {
     setInput('');
     setMsgs(p => [...p, { role: 'user', text: msg }]);
     setLoading(true);
+    if (!API_ENABLED) {
+      setMsgs(p => [...p, { role: 'ai', text: 'Backend API chưa được cấu hình nên chatbot đang ở chế độ demo. Bật VITE_API_BASE_URL để kết nối chatbot thật.' }]);
+      setLoading(false);
+      return;
+    }
     try {
       const res = await axios.post(`${API_BASE}/chatbot/ask`, { message: msg });
       const reply = res.data?.reply || res.data?.response || res.data?.message || 'Cảm ơn câu hỏi của bạn!';
@@ -1017,8 +1055,12 @@ export default function App() {
   const [cartOpen, setCartOpen] = useState(false);
 
   useEffect(() => {
+    if (!API_ENABLED) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    axios.get(`${API_BASE}/product`)
+    apiFetch.get('/product')
       .then(r => {
         if (Array.isArray(r.data) && r.data.length > 0) {
           const enriched = r.data.map((p, i) => ({

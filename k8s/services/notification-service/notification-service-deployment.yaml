@@ -35,7 +35,7 @@ spec:
   ports:
     - name: "80"
       port: 80
-      targetPort: 9192
+      targetPort: 8080
   selector:
     app: notification-service
 status:
