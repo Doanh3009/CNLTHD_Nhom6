@@ -25,7 +25,7 @@ const CATEGORIES = ['Tất cả', 'iPhone', 'Mac', 'iPad', 'Watch', 'Audio', 'An
 /* ============================================================
    API
    ============================================================ */
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 const API_ENABLED = Boolean(API_BASE);
 const apiFetch = axios.create({ baseURL: API_BASE });
 apiFetch.interceptors.request.use(c => {
