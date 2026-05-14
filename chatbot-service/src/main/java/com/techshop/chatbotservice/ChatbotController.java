@@ -14,7 +14,6 @@ public class ChatbotController {
 
     @PostMapping("/ask")
     public ChatResponse ask(@RequestBody ChatRequest request) {
-        String reply = chatbotService.askQuestion(request.getMessage());
-        return new ChatResponse(reply);
+        return chatbotService.askQuestion(request.getMessage());
     }
 }

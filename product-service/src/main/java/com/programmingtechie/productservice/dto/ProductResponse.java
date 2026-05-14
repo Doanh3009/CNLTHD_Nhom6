@@ -13,7 +13,16 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class ProductResponse {
     private String id;
+    private String skuCode;
     private String name;
     private String description;
     private BigDecimal price;
+    private String category;
+    private String imageUrl;
+    private Integer stockQuantity;
+    private String unit;
+    private BigDecimal lastImportPrice;
+    private BigDecimal profitMarginPercent;
+    private String status;
+    private Boolean hasImportHistory;
 }

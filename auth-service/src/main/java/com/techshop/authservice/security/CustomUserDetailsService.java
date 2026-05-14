@@ -8,7 +8,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
+import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +22,13 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Khong tim thay user: " + username));
 
         return new org.springframework.security.core.userdetails.User(
-                user.getUsername(), user.getPassword(), new ArrayList<>());
+                user.getUsername(),
+                user.getPassword(),
+                true,
+                true,
+                true,
+                !Boolean.TRUE.equals(user.getLocked()),
+                Collections.singletonList(() -> "ROLE_" + (user.getRole() == null ? "USER" : user.getRole()))
+        );
     }
 }

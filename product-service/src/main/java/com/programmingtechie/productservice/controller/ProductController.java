@@ -1,5 +1,6 @@
 package com.programmingtechie.productservice.controller;
 
+import com.programmingtechie.productservice.dto.ProductImportSyncRequest;
 import com.programmingtechie.productservice.dto.ProductRequest;
 import com.programmingtechie.productservice.dto.ProductResponse;
 import com.programmingtechie.productservice.service.ProductService;
@@ -18,14 +19,44 @@ public class ProductController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public void createProduct(@RequestBody ProductRequest productRequest) {
-        productService.createProduct(productRequest);
+    public ProductResponse createProduct(@RequestBody ProductRequest productRequest) {
+        return productService.createProduct(productRequest);
     }
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<ProductResponse> getAllProducts() {
-        return productService.getAllProducts();
+    public List<ProductResponse> getVisibleProducts() {
+        return productService.getVisibleProducts();
     }
 
+    @GetMapping("/admin")
+    @ResponseStatus(HttpStatus.OK)
+    public List<ProductResponse> getAdminProducts() {
+        return productService.getAdminProducts();
+    }
+
+    @GetMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public ProductResponse getProduct(@PathVariable String id) {
+        return productService.getProduct(id);
+    }
+
+    @PutMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public ProductResponse updateProduct(@PathVariable String id, @RequestBody ProductRequest productRequest) {
+        return productService.updateProduct(id, productRequest);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteProduct(@PathVariable String id) {
+        productService.deleteProduct(id);
+    }
+
+    @PutMapping("/admin/import-sync")
+    @ResponseStatus(HttpStatus.OK)
+    public ProductResponse syncImport(@RequestBody ProductImportSyncRequest request) {
+        return productService.syncImport(request);
+    }
 }
+
