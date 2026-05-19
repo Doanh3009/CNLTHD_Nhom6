@@ -24,7 +24,7 @@ const Register = () => {
     <div className="min-h-[80vh] flex items-center justify-center py-16">
       <div className="w-full max-w-md p-10 bg-white rounded-[24px] shadow-2xl border border-gray-100">
         <h2 className="text-3xl font-bold text-heading text-center mb-2">Tạo tài khoản</h2>
-        <p className="text-body text-center mb-8">Tham gia TechShop ngay hôm nay</p>
+        <p className="text-body text-center mb-8">Tham gia KDKTechShop ngay hôm nay</p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <input type="text" placeholder="Tên đăng nhập" className="w-full h-12 px-5 border border-inputBorder rounded-[12px] focus:border-primary focus:ring-1 focus:ring-primary outline-none" 

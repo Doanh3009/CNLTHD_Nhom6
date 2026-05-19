@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 import java.util.Locale;
 
@@ -31,7 +30,7 @@ public class ProductService {
                 .skuCode(normalizeSku(productRequest.getSkuCode(), productRequest.getName()))
                 .name(productRequest.getName())
                 .description(productRequest.getDescription())
-                .price(resolveSellingPrice(productRequest.getPrice(), productRequest.getLastImportPrice(), productRequest.getProfitMarginPercent()))
+                .price(defaultMoney(productRequest.getPrice()))
                 .category(productRequest.getCategory())
                 .imageUrl(productRequest.getImageUrl())
                 .stockQuantity(defaultInteger(productRequest.getStockQuantity()))
@@ -73,7 +72,7 @@ public class ProductService {
         product.setUnit(defaultUnit(productRequest.getUnit()));
         product.setLastImportPrice(defaultMoney(productRequest.getLastImportPrice()));
         product.setProfitMarginPercent(defaultMoney(productRequest.getProfitMarginPercent()));
-        product.setPrice(resolveSellingPrice(productRequest.getPrice(), product.getLastImportPrice(), product.getProfitMarginPercent()));
+        product.setPrice(defaultMoney(productRequest.getPrice()));
         product.setStatus(normalizeStatus(productRequest.getStatus()));
         if (product.getHasImportHistory() == null) {
             product.setHasImportHistory(false);
@@ -99,7 +98,6 @@ public class ProductService {
         if (request.getStockQuantity() != null) {
             product.setStockQuantity(request.getStockQuantity());
         }
-        product.setPrice(calculateSellingPrice(product.getLastImportPrice(), product.getProfitMarginPercent()));
         return mapToProductResponse(productRepository.save(product));
     }
 
@@ -154,20 +152,4 @@ public class ProductService {
         return value == null ? BigDecimal.ZERO : value;
     }
 
-    private BigDecimal resolveSellingPrice(BigDecimal requestedPrice, BigDecimal importPrice, BigDecimal margin) {
-        if (requestedPrice != null && requestedPrice.compareTo(BigDecimal.ZERO) > 0) {
-            return requestedPrice;
-        }
-        return calculateSellingPrice(importPrice, margin);
-    }
-
-    private BigDecimal calculateSellingPrice(BigDecimal importPrice, BigDecimal margin) {
-        BigDecimal base = defaultMoney(importPrice);
-        BigDecimal percent = defaultMoney(margin);
-        if (base.compareTo(BigDecimal.ZERO) <= 0) {
-            return BigDecimal.ZERO;
-        }
-        return base.multiply(BigDecimal.ONE.add(percent.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP)))
-                .setScale(0, RoundingMode.HALF_UP);
-    }
 }

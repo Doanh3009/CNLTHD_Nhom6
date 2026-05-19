@@ -1,4 +1,4 @@
-import { createElement, useCallback, useEffect, useMemo, useState } from 'react';
+import { createElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -13,6 +13,7 @@ import {
   Headphones,
   Heart,
   Home,
+  ImagePlus,
   Laptop,
   LayoutDashboard,
   Lock,
@@ -71,6 +72,10 @@ api.interceptors.request.use((config) => {
 
 const ADMIN_TOKEN_KEY = 'kdkt_admin_token';
 const ADMIN_USER_KEY = 'kdkt_admin_user';
+const ADMIN_CLIENT_VERSION_KEY = 'kdkt_admin_client_version';
+const ADMIN_CLIENT_VERSION = '2026-05-18-admin-data-v2';
+const CART_STORAGE_KEY = 'kdkt_cart';
+const ORDERS_STORAGE_KEY = 'kdkt_orders';
 
 const COUPONS = {
   TECH10: { label: '10% off your order', percent: 0.1 },
@@ -151,7 +156,7 @@ const CUSTOMER_TEXT = {
     outOfStock: 'Out of stock',
     productTagNew: 'New',
     sale: 'Sale',
-    catalogTitle: 'All KDKTech gadgets',
+    catalogTitle: 'All KDKTechShop gadgets',
     catalogText: 'Search, filter, compare prices, and add the right device to your cart.',
     checkoutDiscount: '10% off at checkout',
     vipCoupon: '20% off for VIP customers',
@@ -172,7 +177,7 @@ const CUSTOMER_TEXT = {
     noMatchingText: 'Try another brand, category, color, or price range.',
     clearFilters: 'Clear filters',
     checkout: 'Checkout',
-    checkoutTitle: 'Complete your KDKTech order',
+    checkoutTitle: 'Complete your KDKTechShop order',
     checkoutText: 'Review your cart, add delivery details, choose payment, and apply a coupon.',
     cartStep: 'Cart',
     deliveryStep: 'Delivery',
@@ -207,7 +212,7 @@ const CUSTOMER_TEXT = {
     orderPlaced: 'Order placed successfully',
     orderFailed: 'Could not create the order. Please check the backend order-service.',
     emptyCart: 'Your cart is empty',
-    emptyCartText: 'Explore the latest KDKTech devices and add your favorites.',
+    emptyCartText: 'Explore the latest KDKTechShop devices and add your favorites.',
     selectedGear: 'Your selected gear',
     orderHistory: 'Order history',
     orderHistoryText: 'Track status, payment, and product details for every purchased gadget.',
@@ -217,7 +222,7 @@ const CUSTOMER_TEXT = {
     recipient: 'Recipient',
     justCreated: 'Just created',
     welcomeBack: 'Welcome back',
-    join: 'Join KDKTech',
+    join: 'Join KDKTechShop',
     createAccount: 'Create account',
     authLoginText: 'Sign in to checkout faster and track your orders.',
     authRegisterText: 'Create an account to save orders and manage your gadget purchases.',
@@ -232,7 +237,7 @@ const CUSTOMER_TEXT = {
     requestFailed: 'Could not process the request',
     findRightGadget: 'Find the right gadget',
     aiFinderText: 'Ask for a device by budget, feature, category, or use case.',
-    aiWelcome: 'Tell me your budget and priorities: camera, battery, work, study, gaming, tablet, watch, or audio. I will recommend products from the KDKTech catalog.',
+    aiWelcome: 'Tell me your budget and priorities: camera, battery, work, study, gaming, tablet, watch, or audio. I will recommend products from the KDKTechShop catalog.',
     chatbotNotReady: 'The chatbot service is not ready yet. You can continue shopping from the catalog.',
     replying: 'Replying...',
     askProducts: 'Ask about products...',
@@ -342,7 +347,7 @@ const CUSTOMER_TEXT = {
     outOfStock: 'Hết hàng',
     productTagNew: 'Mới',
     sale: 'Giảm',
-    catalogTitle: 'Tất cả thiết bị KDKTech',
+    catalogTitle: 'Tất cả thiết bị KDKTechShop',
     catalogText: 'Tìm kiếm, lọc, so sánh giá và thêm thiết bị phù hợp vào giỏ hàng.',
     checkoutDiscount: 'Giảm 10% khi thanh toán',
     vipCoupon: 'Giảm 20% cho khách VIP',
@@ -363,7 +368,7 @@ const CUSTOMER_TEXT = {
     noMatchingText: 'Thử thương hiệu, danh mục, màu hoặc mức giá khác.',
     clearFilters: 'Xóa bộ lọc',
     checkout: 'Thanh toán',
-    checkoutTitle: 'Hoàn tất đơn hàng KDKTech',
+    checkoutTitle: 'Hoàn tất đơn hàng KDKTechShop',
     checkoutText: 'Kiểm tra giỏ hàng, nhập giao hàng, chọn thanh toán và áp dụng mã giảm giá.',
     cartStep: 'Giỏ hàng',
     deliveryStep: 'Giao hàng',
@@ -398,7 +403,7 @@ const CUSTOMER_TEXT = {
     orderPlaced: 'Đặt hàng thành công',
     orderFailed: 'Không tạo được đơn hàng. Vui lòng kiểm tra order-service.',
     emptyCart: 'Giỏ hàng đang trống',
-    emptyCartText: 'Khám phá thiết bị mới nhất tại KDKTech và thêm sản phẩm bạn thích.',
+    emptyCartText: 'Khám phá thiết bị mới nhất tại KDKTechShop và thêm sản phẩm bạn thích.',
     selectedGear: 'Thiết bị đã chọn',
     orderHistory: 'Lịch sử đơn hàng',
     orderHistoryText: 'Theo dõi trạng thái, thanh toán và sản phẩm trong từng đơn hàng.',
@@ -408,7 +413,7 @@ const CUSTOMER_TEXT = {
     recipient: 'Người nhận',
     justCreated: 'Vừa tạo',
     welcomeBack: 'Chào mừng quay lại',
-    join: 'Tham gia KDKTech',
+    join: 'Tham gia KDKTechShop',
     createAccount: 'Tạo tài khoản',
     authLoginText: 'Đăng nhập để thanh toán nhanh hơn và theo dõi đơn hàng.',
     authRegisterText: 'Tạo tài khoản để lưu đơn hàng và quản lý mua sắm công nghệ.',
@@ -423,7 +428,7 @@ const CUSTOMER_TEXT = {
     requestFailed: 'Không xử lý được yêu cầu',
     findRightGadget: 'Tìm thiết bị phù hợp',
     aiFinderText: 'Hỏi theo ngân sách, tính năng, danh mục hoặc nhu cầu sử dụng.',
-    aiWelcome: 'Hãy cho tôi biết ngân sách và ưu tiên của bạn: camera, pin, làm việc, học tập, gaming, tablet, đồng hồ hoặc âm thanh. Tôi sẽ gợi ý sản phẩm từ KDKTech.',
+    aiWelcome: 'Hãy cho tôi biết ngân sách và ưu tiên của bạn: camera, pin, làm việc, học tập, gaming, tablet, đồng hồ hoặc âm thanh. Tôi sẽ gợi ý sản phẩm từ KDKTechShop.',
     chatbotNotReady: 'Chatbot chưa sẵn sàng. Bạn vẫn có thể tiếp tục mua sắm từ catalog.',
     replying: 'Đang trả lời...',
     askProducts: 'Hỏi về sản phẩm...',
@@ -533,13 +538,30 @@ const decodeUser = () => {
   const fallbackUsername = localStorage.getItem('username');
   if (!token) return fallbackUsername ? { username: fallbackUsername } : null;
   const payload = decodeJwtPayload(token);
-  return { username: payload?.sub || fallbackUsername || 'user', role: payload?.role || 'USER' };
+  const role = payload?.role || 'USER';
+  if (String(role).toUpperCase() !== 'USER') {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    return null;
+  }
+  return { username: payload?.sub || fallbackUsername || 'user', role: 'USER' };
 };
 
 const getAdminSession = () => {
+  if (localStorage.getItem(ADMIN_CLIENT_VERSION_KEY) !== ADMIN_CLIENT_VERSION) {
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
+    localStorage.removeItem(ADMIN_USER_KEY);
+    localStorage.setItem(ADMIN_CLIENT_VERSION_KEY, ADMIN_CLIENT_VERSION);
+    return null;
+  }
   const token = localStorage.getItem(ADMIN_TOKEN_KEY);
   if (!token) return null;
   const payload = decodeJwtPayload(token);
+  if (payload?.exp && payload.exp * 1000 <= Date.now()) {
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
+    localStorage.removeItem(ADMIN_USER_KEY);
+    return null;
+  }
   const stored = (() => {
     try { return JSON.parse(localStorage.getItem(ADMIN_USER_KEY) || '{}'); } catch { return {}; }
   })();
@@ -551,6 +573,18 @@ const getAdminSession = () => {
 const adminConfig = () => {
   const session = getAdminSession();
   return session ? { headers: { Authorization: `Bearer ${session.token}` } } : {};
+};
+
+const adminRequestStatus = (result) => (
+  result.status === 'rejected' ? result.reason?.response?.status : null
+);
+
+const isAdminAuthFailure = (result) => [401, 403].includes(adminRequestStatus(result));
+
+const adminFailureMessage = (label, result) => {
+  if (result.status === 'fulfilled') return null;
+  const status = adminRequestStatus(result);
+  return `${label}${status ? ` (${status})` : ''}`;
 };
 
 const enrichProduct = (product, index = 0) => {
@@ -567,8 +601,6 @@ const enrichProduct = (product, index = 0) => {
     imageUrl: product.imageUrl || demo?.imageUrl || FALLBACK_IMAGES[index % FALLBACK_IMAGES.length],
     stockQuantity: product.stockQuantity ?? demo?.stockQuantity ?? 99,
     unit: product.unit || demo?.unit || 'piece',
-    lastImportPrice: Number(product.lastImportPrice ?? demo?.lastImportPrice ?? Math.round(Number(product.price || demo?.price || 0) * 0.8)),
-    profitMarginPercent: Number(product.profitMarginPercent ?? demo?.profitMarginPercent ?? 25),
     status: product.status || demo?.status || 'VISIBLE',
     hasImportHistory: Boolean(product.hasImportHistory ?? demo?.hasImportHistory ?? false),
     brand: meta.brand || product.brand || 'KDK',
@@ -606,11 +638,11 @@ function Toasts({ toasts }) {
 
 function useCart() {
   const [cart, setCart] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('ts_cart') || '[]'); } catch { return []; }
+    try { return JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || '[]'); } catch { return []; }
   });
   const save = (next) => {
     setCart(next);
-    localStorage.setItem('ts_cart', JSON.stringify(next));
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(next));
   };
   const addItem = (product) => {
     save(cart.some((item) => item.id === product.id)
@@ -626,12 +658,12 @@ function useCart() {
 }
 
 function loadLocalOrders() {
-  try { return JSON.parse(localStorage.getItem('ts_orders') || '[]'); } catch { return []; }
+  try { return JSON.parse(localStorage.getItem(ORDERS_STORAGE_KEY) || '[]'); } catch { return []; }
 }
 
 function saveLocalOrder(order) {
   const orders = loadLocalOrders();
-  localStorage.setItem('ts_orders', JSON.stringify([order, ...orders].slice(0, 30)));
+  localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify([order, ...orders].slice(0, 30)));
 }
 
 const isAdminAuthed = () => Boolean(getAdminSession());
@@ -648,7 +680,7 @@ function BrandLogo({ admin = false }) {
   return (
     <Link className={admin ? 'admin-logo' : 'brand'} to={admin ? '/admin/dashboard' : '/'}>
       <span className="brand-mark">K</span>
-      <span>KDKTech</span>
+      <span>KDKTechShop</span>
     </Link>
   );
 }
@@ -791,6 +823,7 @@ function StoreFooter({ text }) {
 
 function CartDrawer({ open, close, cart, updateQty, removeItem, subtotal, text }) {
   const navigate = useNavigate();
+  const user = decodeUser();
   return (
     <>
       <div className={`shade ${open ? 'show' : ''}`} onClick={close} />
@@ -827,7 +860,7 @@ function CartDrawer({ open, close, cart, updateQty, removeItem, subtotal, text }
         </div>
         <div className="drawer-foot">
           <div className="total-row"><span>{text.subtotal}</span><b>{money(subtotal)}</b></div>
-          <button className="primary full" type="button" disabled={cart.length === 0} onClick={() => { close(); navigate('/checkout'); }}>
+          <button className="primary full" type="button" disabled={cart.length === 0} onClick={() => { close(); navigate(user ? '/checkout' : '/login?next=/checkout'); }}>
             {text.checkout} <ArrowRight size={18} />
           </button>
         </div>
@@ -1149,6 +1182,15 @@ function totalsFor(cartSubtotal, couponCode) {
   return { coupon, discount, shippingFee, total: Math.max(cartSubtotal - discount + shippingFee, 0) };
 }
 
+const cleanPhone = (value) => value.replace(/\D/g, '').slice(0, 10);
+const isValidVietnamPhone = (value) => /^0\d{9}$/.test(value);
+const isValidDeliveryAddress = (value) => {
+  const address = value.trim();
+  return address.length >= 8 && /\d/.test(address) && /[A-Za-zÀ-ỹ]/.test(address);
+};
+const cleanShortText = (value) => value.replace(/[<>]/g, '').slice(0, 120);
+const cleanLongText = (value) => value.replace(/[<>]/g, '').slice(0, 240);
+
 function CheckoutPage({ cart, subtotal, updateQty, removeItem, clearCart, addToast, text }) {
   const navigate = useNavigate();
   const user = decodeUser();
@@ -1164,14 +1206,39 @@ function CheckoutPage({ cart, subtotal, updateQty, removeItem, clearCart, addToa
     { id: 'VNPAY', title: text.vnpayTitle, detail: text.vnpayDetail, icon: ShieldCheck },
   ];
 
+  if (!user) {
+    return (
+      <section className="page narrow">
+        <PageIntro eyebrow={text.checkout} title={text.checkoutTitle} text={text.checkoutText} />
+        <div className="empty">
+          <Lock size={42} />
+          <h2>Vui lòng đăng nhập để đặt hàng</h2>
+          <p className="muted">KDKTechShop cần tài khoản để lưu đơn hàng và theo dõi trạng thái giao hàng.</p>
+          <div className="row">
+            <Link className="primary" to="/login?next=/checkout">{text.signIn}</Link>
+            <Link className="ghost-btn" to="/register?next=/checkout">{text.createAccount}</Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   const placeOrder = async () => {
     if (cart.length === 0) return;
     if (!customer.customerName || !customer.phone || !customer.shippingAddress || !customer.ward) {
       addToast(text.completeDelivery, 'warning');
       return;
     }
+    if (!isValidVietnamPhone(customer.phone)) {
+      addToast('Số điện thoại phải có 10 chữ số và bắt đầu bằng 0', 'warning');
+      return;
+    }
+    if (!isValidDeliveryAddress(customer.shippingAddress)) {
+      addToast('Địa chỉ cần có số nhà và tên đường/khu vực rõ ràng', 'warning');
+      return;
+    }
     const payload = {
-      username: user?.username || 'guest',
+      username: user.username,
       ...customer,
       paymentMethod,
       couponCode: couponCode.trim().toUpperCase(),
@@ -1190,19 +1257,16 @@ function CheckoutPage({ cart, subtotal, updateQty, removeItem, clearCart, addToa
     setPlacing(true);
     try {
       const response = await api.post('/order', payload);
-      const saved = response.data?.orderNumber ? response.data : {
-        ...payload,
-        orderNumber: `LOCAL-${Date.now()}`,
-        status: 'PENDING',
-        createdAt: new Date().toISOString(),
-        items: payload.orderLineItemsDtoList,
-      };
+      if (!response.data?.orderNumber) {
+        throw new Error('Order was not persisted');
+      }
+      const saved = response.data;
       saveLocalOrder(saved);
       clearCart();
       addToast(text.orderPlaced);
       navigate('/orders');
-    } catch {
-      addToast(text.orderFailed, 'error');
+    } catch (error) {
+      addToast(error.response?.data?.message || text.orderFailed, 'error');
     } finally {
       setPlacing(false);
     }
@@ -1228,11 +1292,11 @@ function CheckoutPage({ cart, subtotal, updateQty, removeItem, clearCart, addToa
             <div className="panel checkout-panel">
               <h2>{text.deliveryInfo}</h2>
               <div className="form-grid">
-                <input placeholder={text.fullName} value={customer.customerName} onChange={(event) => setCustomer({ ...customer, customerName: event.target.value })} />
-                <input placeholder={text.phoneNumber} value={customer.phone} onChange={(event) => setCustomer({ ...customer, phone: event.target.value })} />
-                <input placeholder={text.deliveryAddress} value={customer.shippingAddress} onChange={(event) => setCustomer({ ...customer, shippingAddress: event.target.value })} />
-                <input placeholder={text.ward} value={customer.ward} onChange={(event) => setCustomer({ ...customer, ward: event.target.value })} />
-                <input className="span-2" placeholder={text.orderNote} value={customer.note} onChange={(event) => setCustomer({ ...customer, note: event.target.value })} />
+                <input placeholder={text.fullName} minLength={2} maxLength={80} value={customer.customerName} onChange={(event) => setCustomer({ ...customer, customerName: cleanShortText(event.target.value) })} />
+                <input placeholder={text.phoneNumber} inputMode="numeric" pattern="0[0-9]{9}" maxLength={10} value={customer.phone} onChange={(event) => setCustomer({ ...customer, phone: cleanPhone(event.target.value) })} />
+                <input placeholder={text.deliveryAddress} minLength={8} maxLength={140} value={customer.shippingAddress} onChange={(event) => setCustomer({ ...customer, shippingAddress: cleanLongText(event.target.value) })} />
+                <input placeholder={text.ward} minLength={2} maxLength={80} value={customer.ward} onChange={(event) => setCustomer({ ...customer, ward: cleanShortText(event.target.value) })} />
+                <input className="span-2" placeholder={text.orderNote} maxLength={200} value={customer.note} onChange={(event) => setCustomer({ ...customer, note: cleanLongText(event.target.value) })} />
               </div>
               <h2>{text.paymentMethod}</h2>
               <div className="payment-grid">
@@ -1302,17 +1366,28 @@ function PageIntro({ eyebrow, title, text, action }) {
 function OrdersPage({ text }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const username = decodeUser()?.username || 'guest';
+  const user = decodeUser();
+  const username = user?.username;
   useEffect(() => {
+    if (!username) {
+      setLoading(false);
+      return;
+    }
     api.get(`/order?username=${encodeURIComponent(username)}`)
       .then((response) => setOrders(response.data || []))
-      .catch(() => setOrders(loadLocalOrders().filter((order) => !order.username || order.username === username)))
+      .catch(() => setOrders([]))
       .finally(() => setLoading(false));
   }, [username]);
   return (
     <section className="page">
       <PageIntro eyebrow={text.nav[2]} title={text.orderHistory} text={text.orderHistoryText} />
-      {loading ? (
+      {!user ? (
+        <div className="empty">
+          <Lock size={42} />
+          <h2>Vui lòng đăng nhập để xem đơn hàng</h2>
+          <Link className="primary" to="/login?next=/orders">{text.signIn}</Link>
+        </div>
+      ) : loading ? (
         <div className="loading-line"><RefreshCw size={18} />{text.loadingOrders}</div>
       ) : orders.length === 0 ? (
         <div className="empty">
@@ -1362,8 +1437,6 @@ const emptyProduct = {
   imageUrl: '',
   stockQuantity: 10,
   unit: 'piece',
-  lastImportPrice: '',
-  profitMarginPercent: 25,
   status: 'VISIBLE',
 };
 
@@ -1380,7 +1453,6 @@ const emptyUserForm = {
   username: '',
   email: '',
   password: '',
-  role: 'USER',
 };
 
 const createReceiptLine = () => ({ skuCode: '', productName: '', importPrice: '', quantity: 1 });
@@ -1391,7 +1463,7 @@ const emptyReceiptForm = () => ({
   items: [createReceiptLine()],
 });
 
-const ORDER_STATUSES = ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'];
+const ORDER_STATUSES = ['PENDING', 'COMPLETED', 'CANCELLED'];
 const VISIBILITY_STATUSES = ['VISIBLE', 'HIDDEN'];
 
 const ADMIN_SECTIONS = [
@@ -1400,7 +1472,6 @@ const ADMIN_SECTIONS = [
   ['admin-categories', 'Danh mục', SlidersHorizontal],
   ['admin-products', 'Sản phẩm', PackageCheck],
   ['admin-receipts', 'Nhập hàng', Truck],
-  ['admin-pricing', 'Giá bán', BadgePercent],
   ['admin-orders', 'Đơn hàng', ClipboardList],
   ['admin-reports', 'Tồn kho / Báo cáo', ShieldCheck],
 ];
@@ -1425,6 +1496,7 @@ function AdminLoginPage({ addToast }) {
       }
       localStorage.setItem(ADMIN_TOKEN_KEY, response.data.token);
       localStorage.setItem(ADMIN_USER_KEY, JSON.stringify({ username: response.data.username || form.username, role: response.data.role }));
+      localStorage.setItem(ADMIN_CLIENT_VERSION_KEY, ADMIN_CLIENT_VERSION);
       addToast('Đăng nhập quản trị thành công');
       navigate('/admin/dashboard');
     } catch (error) {
@@ -1441,7 +1513,7 @@ function AdminLoginPage({ addToast }) {
     <section className="admin-login-page">
       <form className="auth-card admin-login-card" onSubmit={submit}>
         <BrandLogo admin />
-        <span className="eyebrow">KDKTech web-admin</span>
+        <span className="eyebrow">KDKTechShop web-admin</span>
         <h1>Đăng nhập quản trị</h1>
         <p>Khu vực riêng cho quản trị viên, dùng URL trực tiếp và tài khoản có quyền ADMIN.</p>
         <label>
@@ -1484,7 +1556,7 @@ function AdminShell({ children, activeSection, onSectionChange }) {
       <main className="admin-main">
         <div className="admin-topbar">
           <div>
-            <span className="eyebrow">KDKTech Web Admin</span>
+            <span className="eyebrow">KDKTechShop Web Admin</span>
             <h1>Trung tâm quản trị</h1>
           </div>
           <div className="admin-user-badge">
@@ -1502,6 +1574,7 @@ function AdminShell({ children, activeSection, onSectionChange }) {
 }
 
 function AdminPage({ products, reloadProducts, addToast }) {
+  const navigate = useNavigate();
   const [adminProducts, setAdminProducts] = useState(products);
   const [categories, setCategories] = useState([]);
   const [users, setUsers] = useState([]);
@@ -1511,6 +1584,7 @@ function AdminPage({ products, reloadProducts, addToast }) {
   const [movements, setMovements] = useState([]);
   const [lowStock, setLowStock] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [adminError, setAdminError] = useState('');
   const [form, setForm] = useState(emptyProduct);
   const [editingId, setEditingId] = useState(null);
   const [categoryForm, setCategoryForm] = useState(emptyCategory);
@@ -1518,9 +1592,9 @@ function AdminPage({ products, reloadProducts, addToast }) {
   const [userForm, setUserForm] = useState(emptyUserForm);
   const [receiptForm, setReceiptForm] = useState(emptyReceiptForm());
   const [editingReceiptId, setEditingReceiptId] = useState(null);
-  const [priceMargins, setPriceMargins] = useState({});
   const [orderFilters, setOrderFilters] = useState({ from: '', to: '', status: '', ward: '', sort: 'createdAtDesc' });
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [stockAt, setStockAt] = useState('');
   const [movementFilters, setMovementFilters] = useState({ from: '', to: '' });
   const [lowStockThreshold, setLowStockThreshold] = useState(5);
@@ -1534,8 +1608,16 @@ function AdminPage({ products, reloadProducts, addToast }) {
   const productBySku = useMemo(() => Object.fromEntries(adminProducts.map((product) => [product.skuCode, product])), [adminProducts]);
   const stockRows = stock.map((item) => ({ ...item, product: productBySku[item.skuCode] }));
 
+  const clearAdminAndLogin = useCallback(() => {
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
+    localStorage.removeItem(ADMIN_USER_KEY);
+    addToast('Phiên quản trị đã hết hạn. Vui lòng đăng nhập lại.', 'error');
+    navigate('/admin/login', { replace: true });
+  }, [addToast, navigate]);
+
   const loadAdminData = useCallback(async () => {
     setLoading(true);
+    setAdminError('');
     const [
       productResult,
       categoryResult,
@@ -1555,16 +1637,44 @@ function AdminPage({ products, reloadProducts, addToast }) {
       api.get('/inventory/reports/movement', adminConfig()),
       api.get(`/inventory/low-stock?threshold=${lowStockThreshold}`, adminConfig()),
     ]);
+    const results = [
+      productResult,
+      categoryResult,
+      userResult,
+      orderResult,
+      receiptResult,
+      stockResult,
+      movementResult,
+      lowStockResult,
+    ];
+    if (results.some(isAdminAuthFailure)) {
+      setLoading(false);
+      clearAdminAndLogin();
+      return;
+    }
+    const failures = [
+      adminFailureMessage('sản phẩm', productResult),
+      adminFailureMessage('danh mục', categoryResult),
+      adminFailureMessage('người dùng', userResult),
+      adminFailureMessage('đơn hàng', orderResult),
+      adminFailureMessage('phiếu nhập', receiptResult),
+      adminFailureMessage('tồn kho', stockResult),
+      adminFailureMessage('báo cáo kho', movementResult),
+      adminFailureMessage('sắp hết hàng', lowStockResult),
+    ].filter(Boolean);
+    if (failures.length > 0) {
+      setAdminError(`Không tải được dữ liệu: ${failures.join(', ')}.`);
+    }
     setAdminProducts(productResult.status === 'fulfilled' ? (productResult.value.data || []).map(enrichProduct) : products);
     setCategories(categoryResult.status === 'fulfilled' ? categoryResult.value.data || [] : []);
-    setUsers(userResult.status === 'fulfilled' ? userResult.value.data || [] : []);
+    setUsers(userResult.status === 'fulfilled' ? (userResult.value.data || []).filter((user) => String(user.role || 'USER').toUpperCase() === 'USER') : []);
     setOrders(orderResult.status === 'fulfilled' ? orderResult.value.data || [] : []);
     setReceipts(receiptResult.status === 'fulfilled' ? receiptResult.value.data || [] : []);
     setStock(stockResult.status === 'fulfilled' ? stockResult.value.data || [] : []);
     setMovements(movementResult.status === 'fulfilled' ? movementResult.value.data || [] : []);
     setLowStock(lowStockResult.status === 'fulfilled' ? lowStockResult.value.data || [] : []);
     setLoading(false);
-  }, [lowStockThreshold, products]);
+  }, [clearAdminAndLogin, lowStockThreshold, products]);
 
   useEffect(() => { loadAdminData(); }, [loadAdminData]);
 
@@ -1596,8 +1706,6 @@ function AdminPage({ products, reloadProducts, addToast }) {
       imageUrl: product.imageUrl || '',
       stockQuantity: product.stockQuantity ?? 0,
       unit: product.unit || 'piece',
-      lastImportPrice: product.lastImportPrice || '',
-      profitMarginPercent: product.profitMarginPercent ?? 25,
       status: product.status || 'VISIBLE',
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1609,8 +1717,6 @@ function AdminPage({ products, reloadProducts, addToast }) {
       ...form,
       skuCode: form.skuCode || makeSku(form.name),
       stockQuantity: Number(form.stockQuantity || 0),
-      lastImportPrice: Number(form.lastImportPrice || 0),
-      profitMarginPercent: Number(form.profitMarginPercent || 0),
       ...(form.price !== '' ? { price: Number(form.price || 0) } : {}),
     };
     try {
@@ -1663,6 +1769,27 @@ function AdminPage({ products, reloadProducts, addToast }) {
     });
   };
 
+  const chooseProductImage = (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      addToast('Chỉ chọn file ảnh cho sản phẩm', 'warning');
+      return;
+    }
+    if (file.size > 1.5 * 1024 * 1024) {
+      addToast('Ảnh sản phẩm nên nhỏ hơn 1.5MB để lưu và tải nhanh', 'warning');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setForm((current) => ({ ...current, imageUrl: reader.result || '' }));
+      addToast('Đã chọn ảnh sản phẩm');
+    };
+    reader.onerror = () => addToast('Không đọc được file ảnh', 'error');
+    reader.readAsDataURL(file);
+  };
+
   const deleteCategory = async (id) => {
     if (!window.confirm('Xóa danh mục này?')) return;
     try {
@@ -1677,7 +1804,7 @@ function AdminPage({ products, reloadProducts, addToast }) {
   const saveUser = async (event) => {
     event.preventDefault();
     try {
-      await api.post('/auth/admin/users', userForm, adminConfig());
+      await api.post('/auth/admin/users', { ...userForm, role: 'USER' }, adminConfig());
       setUserForm(emptyUserForm);
       await loadAdminData();
       addToast('Đã tạo tài khoản');
@@ -1708,7 +1835,7 @@ function AdminPage({ products, reloadProducts, addToast }) {
     updateReceiptLine(index, {
       skuCode,
       productName: product?.name || '',
-      importPrice: product?.lastImportPrice || Math.round(Number(product?.price || 0) * 0.8),
+      importPrice: product?.price || '',
     });
   };
 
@@ -1767,26 +1894,41 @@ function AdminPage({ products, reloadProducts, addToast }) {
     }
   };
 
-  const updateMargin = async (product) => {
-    const margin = Number(priceMargins[product.id] ?? product.profitMarginPercent ?? 0);
-    const payload = {
-      skuCode: product.skuCode,
-      name: product.name,
-      category: product.category,
-      description: product.description,
-      imageUrl: product.imageUrl,
-      stockQuantity: product.stockQuantity,
-      unit: product.unit,
-      lastImportPrice: product.lastImportPrice,
-      profitMarginPercent: margin,
-      status: product.status,
-    };
+  const showReceiptDetail = (receipt) => {
+    setSelectedReceipt(receipt);
+    changeAdminSection('admin-receipts');
+  };
+
+  const showOrderDetail = (order) => {
+    setSelectedOrder(order);
+    changeAdminSection('admin-orders');
+  };
+
+  const openMovementDetail = async (movement) => {
+    const referenceNumber = movement.referenceNumber;
+    if (!referenceNumber) {
+      addToast('Dòng nhập xuất này chưa có mã tham chiếu', 'warning');
+      return;
+    }
+    if (String(movement.type).toUpperCase() === 'IN') {
+      const receipt = receipts.find((item) => item.receiptNumber === referenceNumber);
+      if (receipt) {
+        showReceiptDetail(receipt);
+      } else {
+        addToast('Không tìm thấy chi tiết phiếu nhập tương ứng', 'warning');
+      }
+      return;
+    }
     try {
-      await api.put(`/product/${product.id}`, payload, adminConfig());
-      await refreshCatalog();
-      addToast('Đã cập nhật tỉ lệ lợi nhuận');
+      const existingOrder = orders.find((item) => item.orderNumber === referenceNumber);
+      if (existingOrder) {
+        showOrderDetail(existingOrder);
+        return;
+      }
+      const response = await api.get(`/order/${referenceNumber}`, adminConfig());
+      showOrderDetail(response.data);
     } catch {
-      addToast('Không cập nhật được giá bán', 'error');
+      addToast('Không tìm thấy chi tiết đơn hàng tương ứng', 'warning');
     }
   };
 
@@ -1851,12 +1993,25 @@ function AdminPage({ products, reloadProducts, addToast }) {
 
   return (
     <AdminShell activeSection={activeSection} onSectionChange={changeAdminSection}>
+      {adminError && (
+        <div className="admin-alert">
+          <span>{adminError}</span>
+          <button className="ghost-btn compact" type="button" onClick={loadAdminData}>
+            <RefreshCw size={15} />Tải lại
+          </button>
+        </div>
+      )}
+      {loading && (
+        <div className="loading-line admin-loading">
+          <RefreshCw size={18} />Đang tải dữ liệu quản trị...
+        </div>
+      )}
       {activeSection === 'admin-overview' && (
       <section id="admin-overview" className="admin-section">
         <div className="admin-hero">
           <div>
             <span className="eyebrow">Tổng quan</span>
-            <h1>Quản trị vận hành KDKTech</h1>
+            <h1>Quản trị vận hành KDKTechShop</h1>
             <p>Quản lý tài khoản, danh mục, sản phẩm, nhập hàng, giá bán, đơn hàng và báo cáo tồn kho.</p>
           </div>
           {loading ? <span className="loading-line"><RefreshCw size={18} />Đang tải dữ liệu...</span> : null}
@@ -1879,20 +2034,15 @@ function AdminPage({ products, reloadProducts, addToast }) {
           </div>
         </div>
         <form className="form-grid compact-form" onSubmit={saveUser}>
-          <input placeholder="Tên đăng nhập" value={userForm.username} onChange={(event) => setUserForm({ ...userForm, username: event.target.value })} required />
+          <input placeholder="Tên đăng nhập" pattern="[A-Za-z0-9_.-]{3,32}" maxLength={32} value={userForm.username} onChange={(event) => setUserForm({ ...userForm, username: event.target.value.replace(/\s/g, '').slice(0, 32) })} required />
           <input placeholder="Email" type="email" value={userForm.email} onChange={(event) => setUserForm({ ...userForm, email: event.target.value })} required />
           <input placeholder="Mật khẩu khởi tạo" type="password" value={userForm.password} onChange={(event) => setUserForm({ ...userForm, password: event.target.value })} required />
-          <select value={userForm.role} onChange={(event) => setUserForm({ ...userForm, role: event.target.value })}>
-            <option>USER</option>
-            <option>ADMIN</option>
-          </select>
           <button className="primary" type="submit"><UserPlus size={17} />Tạo tài khoản</button>
         </form>
         <div className="admin-table">
           {users.map((user) => (
             <div className="admin-table-row user-row" key={user.id}>
               <span><b>{user.username}</b><small>{user.email}</small></span>
-              <span>{user.role}</span>
               <span className={statusClass(user.locked ? 'locked' : 'active')}>{user.locked ? 'Đã khóa' : 'Hoạt động'}</span>
               <span>{formatDateTime(user.createdAt)}</span>
               <button className={user.locked ? 'ghost-btn' : 'danger-btn'} type="button" onClick={() => setUserLocked(user, !user.locked)}>
@@ -1911,7 +2061,6 @@ function AdminPage({ products, reloadProducts, addToast }) {
           <div className="form-grid">
             <input placeholder="Mã loại" value={categoryForm.code} onChange={(event) => setCategoryForm({ ...categoryForm, code: event.target.value })} required />
             <input placeholder="Tên loại" value={categoryForm.name} onChange={(event) => setCategoryForm({ ...categoryForm, name: event.target.value })} required />
-            <input placeholder="Ảnh/Icon URL" value={categoryForm.imageUrl} onChange={(event) => setCategoryForm({ ...categoryForm, imageUrl: event.target.value })} />
             <input placeholder="Thứ tự sắp xếp" type="number" value={categoryForm.displayOrder} onChange={(event) => setCategoryForm({ ...categoryForm, displayOrder: event.target.value })} />
             <select value={categoryForm.status} onChange={(event) => setCategoryForm({ ...categoryForm, status: event.target.value })}>
               {VISIBILITY_STATUSES.map((status) => <option key={status}>{status}</option>)}
@@ -1923,9 +2072,9 @@ function AdminPage({ products, reloadProducts, addToast }) {
             {editingCategoryId && <button className="ghost-btn" type="button" onClick={() => { setEditingCategoryId(null); setCategoryForm(emptyCategory); }}>Hủy</button>}
           </div>
         </form>
-        <div className="panel">
+        <div className="panel category-list-panel">
           <h2>Danh sách danh mục</h2>
-          <div className="admin-table">
+          <div className="admin-table category-scroll">
             {categories.map((category) => (
               <div className="admin-table-row category-row" key={category.id}>
                 <span><b>{category.name}</b><small>{category.code}</small></span>
@@ -1951,18 +2100,32 @@ function AdminPage({ products, reloadProducts, addToast }) {
               <select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}>{categoryOptions.map((item) => <option key={item}>{item}</option>)}</select>
               <input placeholder="Đơn vị tính" value={form.unit} onChange={(event) => setForm({ ...form, unit: event.target.value })} />
               <input placeholder="Số lượng ban đầu" type="number" value={form.stockQuantity} onChange={(event) => setForm({ ...form, stockQuantity: event.target.value })} />
-              <input placeholder="Giá nhập mới nhất" type="number" value={form.lastImportPrice} onChange={(event) => setForm({ ...form, lastImportPrice: event.target.value })} />
-              <input placeholder="% lợi nhuận" type="number" value={form.profitMarginPercent} onChange={(event) => setForm({ ...form, profitMarginPercent: event.target.value })} />
-              <input placeholder="Giá bán" type="number" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} />
+              <input placeholder="Giá bán" type="number" min="0" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} required />
               <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}>
                 {VISIBILITY_STATUSES.map((status) => <option key={status}>{status}</option>)}
               </select>
-              <input className="span-2" placeholder="Hình ảnh URL" value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} />
+              <div className="image-picker span-2">
+                <label className="image-picker-button">
+                  <ImagePlus size={20} />
+                  <b>{form.imageUrl ? 'Đổi ảnh sản phẩm' : 'Chọn ảnh sản phẩm'}</b>
+                  <span>Chọn ảnh JPG, PNG hoặc WebP từ máy</span>
+                  <input type="file" accept="image/*" onChange={chooseProductImage} />
+                </label>
+                {form.imageUrl ? (
+                  <div className="image-preview">
+                    <img src={form.imageUrl} alt={form.name || 'Ảnh sản phẩm'} />
+                    <div>
+                      <b>{form.name || 'Ảnh sản phẩm'}</b>
+                      <span>Ảnh này sẽ được lưu cùng sản phẩm sau khi bấm lưu.</span>
+                    </div>
+                    <button className="ghost-btn compact" type="button" onClick={() => setForm({ ...form, imageUrl: '' })}>Bỏ ảnh</button>
+                  </div>
+                ) : null}
+              </div>
               <textarea className="span-2" placeholder="Mô tả sản phẩm" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} />
             </div>
             <div className="row">
               <button className="primary" type="submit">{editingId ? <Pencil size={17} /> : <Plus size={17} />}{editingId ? 'Lưu sản phẩm' : 'Thêm sản phẩm'}</button>
-              {editingId && <button className="ghost-btn" type="button" onClick={() => setForm({ ...form, imageUrl: '' })}>Bỏ hình</button>}
               {editingId && <button className="ghost-btn" type="button" onClick={() => { setEditingId(null); setForm(emptyProduct); }}>Hủy</button>}
             </div>
           </form>
@@ -1970,7 +2133,7 @@ function AdminPage({ products, reloadProducts, addToast }) {
             <h2>Quy tắc sản phẩm</h2>
             <p>Trạng thái VISIBLE sẽ hiển thị trên trang khách, HIDDEN sẽ ẩn khỏi storefront.</p>
             <p>Nếu sản phẩm đã có lịch sử nhập hàng, thao tác xóa sẽ chuyển sang ẩn thay vì xóa khỏi CSDL.</p>
-            <p>Giá bán có thể nhập trực tiếp hoặc tính từ giá nhập mới nhất và % lợi nhuận.</p>
+            <p>Giá bán được nhập trực tiếp để dễ kiểm soát. Phần nhập hàng chỉ dùng để cập nhật tồn kho.</p>
           </div>
         </div>
         <div className="panel">
@@ -2028,33 +2191,12 @@ function AdminPage({ products, reloadProducts, addToast }) {
                 <span><b>{receipt.receiptNumber}</b><small>{formatDateTime(receipt.importDate)}</small></span>
                 <span>{receipt.items?.length || 0} dòng</span>
                 <span className={statusClass(receipt.status)}>{receipt.status}</span>
+                <button className="link-detail" type="button" onClick={() => showReceiptDetail(receipt)}>Chi tiết</button>
                 <button className="ghost-btn" type="button" disabled={receipt.status === 'COMPLETED'} onClick={() => editReceipt(receipt)}><Pencil size={16} />Sửa</button>
                 <button className="primary compact" type="button" disabled={receipt.status === 'COMPLETED'} onClick={() => completeReceipt(receipt.id)}>Hoàn thành</button>
               </div>
             ))}
           </div>
-        </div>
-      </section>
-      )}
-
-      {activeSection === 'admin-pricing' && (
-      <section id="admin-pricing" className="panel admin-section">
-        <div className="admin-section-head">
-          <div>
-            <span className="eyebrow">Giá bán</span>
-            <h2>Quản lý tỉ lệ lợi nhuận</h2>
-          </div>
-        </div>
-        <div className="admin-table">
-          {adminProducts.map((product) => (
-            <div className="admin-table-row pricing-row" key={`price-${product.id}`}>
-              <span><b>{product.name}</b><small>{product.skuCode}</small></span>
-              <span>Giá vốn {money(product.lastImportPrice)}</span>
-              <input type="number" value={priceMargins[product.id] ?? product.profitMarginPercent ?? 0} onChange={(event) => setPriceMargins({ ...priceMargins, [product.id]: event.target.value })} />
-              <span>{money(product.price)}</span>
-              <button className="primary compact" type="button" onClick={() => updateMargin(product)}>Lưu %</button>
-            </div>
-          ))}
         </div>
       </section>
       )}
@@ -2088,10 +2230,10 @@ function AdminPage({ products, reloadProducts, addToast }) {
               <span><b>#{order.orderNumber?.slice(0, 8)}</b><small>{order.customerName}</small></span>
               <span>{order.ward || '-'}</span>
               <span>{money(order.totalAmount)}</span>
-              <select value={order.status || 'PENDING'} onChange={(event) => updateOrderStatus(order.orderNumber, event.target.value)}>
+              <select className={statusClass(order.status || 'PENDING')} value={order.status || 'PENDING'} onChange={(event) => updateOrderStatus(order.orderNumber, event.target.value)}>
                 {ORDER_STATUSES.map((status) => <option key={status}>{status}</option>)}
               </select>
-              <button className="ghost-btn" type="button" onClick={() => setSelectedOrder(order)}>Chi tiết</button>
+              <button className="ghost-btn" type="button" onClick={() => showOrderDetail(order)}>Chi tiết</button>
             </div>
           ))}
         </div>
@@ -2146,6 +2288,7 @@ function AdminPage({ products, reloadProducts, addToast }) {
                 <span>{movement.quantity}</span>
                 <span>{money(movement.unitPrice)}</span>
                 <span>{formatDateTime(movement.occurredAt)}</span>
+                <button className="link-detail" type="button" onClick={() => openMovementDetail(movement)}>Chi tiết</button>
               </div>
             ))}
           </div>
@@ -2179,32 +2322,66 @@ function AdminPage({ products, reloadProducts, addToast }) {
           </div>
         </>
       )}
+      {selectedReceipt && (
+        <>
+          <div className="shade show" onClick={() => setSelectedReceipt(null)} />
+          <div className="admin-modal">
+            <div className="drawer-head">
+              <div>
+                <span className="eyebrow">Chi tiết phiếu nhập</span>
+                <h2>{selectedReceipt.receiptNumber}</h2>
+              </div>
+              <button className="icon-btn" type="button" onClick={() => setSelectedReceipt(null)}><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              <p><b>Ngày nhập:</b> {formatDateTime(selectedReceipt.importDate)}</p>
+              <p><b>Hoàn thành:</b> {formatDateTime(selectedReceipt.completedAt)}</p>
+              <p><b>Trạng thái:</b> <span className={statusClass(selectedReceipt.status)}>{selectedReceipt.status}</span></p>
+              {selectedReceipt.note && <p><b>Ghi chú:</b> {selectedReceipt.note}</p>}
+              <div className="detail-lines">
+                {(selectedReceipt.items || []).map((item, index) => (
+                  <div className="detail-line" key={`${item.skuCode}-${index}`}>
+                    <span><b>{item.productName || item.skuCode}</b><small>{item.skuCode}</small></span>
+                    <span>x {item.quantity}</span>
+                    <span>{money(item.importPrice)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </AdminShell>
   );
 }
 
 function AuthPage({ mode, addToast, text }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const isLogin = mode === 'login';
   const [form, setForm] = useState({ username: '', email: '', password: '' });
   const [loading, setLoading] = useState(false);
+  const next = new URLSearchParams(location.search).get('next') || '/';
   const submit = async (event) => {
     event.preventDefault();
     setLoading(true);
     try {
       if (isLogin) {
         const response = await api.post('/auth/login', { username: form.username, password: form.password });
+        if (String(response.data?.role || '').toUpperCase() !== 'USER') {
+          throw new Error('Admin accounts must use the admin login page');
+        }
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('username', form.username);
         addToast(text.signedIn);
-        navigate('/');
+        navigate(next);
       } else {
         await api.post('/auth/register', form);
         addToast(text.accountCreated);
-        navigate('/login');
+        navigate(`/login?next=${encodeURIComponent(next)}`);
       }
     } catch (error) {
-      addToast(error.response?.data || text.requestFailed, 'error');
+      addToast(error.response?.data || error.message || text.requestFailed, 'error');
     } finally {
       setLoading(false);
     }
@@ -2217,7 +2394,7 @@ function AuthPage({ mode, addToast, text }) {
         <p>{isLogin ? text.authLoginText : text.authRegisterText}</p>
         <label>
           {text.username}
-          <input placeholder={text.username} value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} required />
+          <input placeholder={text.username} pattern="[A-Za-z0-9_.-]{3,32}" maxLength={32} value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value.replace(/\s/g, '').slice(0, 32) })} required />
         </label>
         {!isLogin && (
           <label>
@@ -2233,7 +2410,7 @@ function AuthPage({ mode, addToast, text }) {
           {isLogin ? <Lock size={18} /> : <UserPlus size={18} />}
           {loading ? text.processing : isLogin ? text.signIn : text.createAccount}
         </button>
-        <Link to={isLogin ? '/register' : '/login'}>{isLogin ? text.needAccount : text.haveAccount}</Link>
+        <Link to={`${isLogin ? '/register' : '/login'}?next=${encodeURIComponent(next)}`}>{isLogin ? text.needAccount : text.haveAccount}</Link>
       </form>
     </section>
   );
@@ -2241,6 +2418,7 @@ function AuthPage({ mode, addToast, text }) {
 
 function ChatPage({ addToCart, text }) {
   const promptIdeas = text.promptIdeas;
+  const chatLogRef = useRef(null);
   const [messages, setMessages] = useState([{
     role: 'bot',
     text: text.aiWelcome,
@@ -2255,6 +2433,12 @@ function ChatPage({ addToCart, text }) {
         : items
     ));
   }, [text.aiWelcome]);
+  useEffect(() => {
+    const log = chatLogRef.current;
+    if (log) {
+      log.scrollTo({ top: log.scrollHeight, behavior: 'smooth' });
+    }
+  }, [messages, loading]);
   const send = async (preset) => {
     const message = (preset || inputText).trim();
     if (!message) return;
@@ -2281,7 +2465,7 @@ function ChatPage({ addToCart, text }) {
         <div className="prompt-chips">
           {promptIdeas.map((idea) => <button key={idea} type="button" onClick={() => send(idea)}>{idea}</button>)}
         </div>
-        <div className="chat-log">
+        <div className="chat-log" ref={chatLogRef}>
           {messages.map((message, index) => (
             <div key={index} className={`message-group ${message.role}`}>
               <div className={`bubble ${message.role}`}>{message.text}</div>

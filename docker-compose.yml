@@ -19,6 +19,23 @@ services:
     command: -p 5431
     restart: always
 
+  postgres-auth:
+    container_name: postgres-auth
+    image: postgres
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: ptechie
+      POSTGRES_PASSWORD: password
+      PGDATA: /data/postgres
+    volumes:
+      - ./postgres-auth:/data/postgres
+    ports:
+      - "5433:5433"
+    expose:
+      - "5433"
+    command: -p 5433
+    restart: always
+
   postgres-inventory:
     container_name: postgres-inventory
     image: postgres
@@ -122,6 +139,7 @@ services:
   api-gateway:
     image: microservices-tutorial/api-gateway:latest
     container_name: api-gateway
+    restart: always
     ports:
       - "8181:8080"
     expose:
@@ -129,6 +147,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY= TRACE
+      - JWT_SECRET=mysecretkey123456789012345678901234567890
     depends_on:
       - zipkin
       - discovery-server
@@ -138,6 +157,7 @@ services:
   product-service:
     container_name: product-service
     image: microservices-tutorial/product-service:latest
+    restart: always
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     depends_on:
@@ -149,9 +169,12 @@ services:
   order-service:
     container_name: order-service
     image: microservices-tutorial/order-service:latest
+    restart: always
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-order:5431/order-service
+      - TZ=Asia/Ho_Chi_Minh
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
     depends_on:
       - postgres-order
       - broker
@@ -163,9 +186,12 @@ services:
   inventory-service:
     container_name: inventory-service
     image: microservices-tutorial/inventory-service:latest
+    restart: always
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-inventory:5432/inventory-service
+      - TZ=Asia/Ho_Chi_Minh
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
     depends_on:
       - postgres-inventory
       - discovery-server
@@ -175,6 +201,7 @@ services:
   notification-service:
     container_name: notification-service
     image: microservices-tutorial/notification-service:latest
+    restart: always
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     depends_on:
@@ -215,22 +242,35 @@ services:
     container_name: auth-service
     image: microservices-tutorial/auth-service:latest
     build: ./auth-service
+    restart: always
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-order:5431/auth_db
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-auth:5433/auth_db
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
       - JWT_SECRET=mysecretkey123456789012345678901234567890
     depends_on:
-      - postgres-order
+      - postgres-auth
       - discovery-server
   chatbot-service:
     container_name: chatbot-service
     image: microservices-tutorial/chatbot-service:latest
     build: ./chatbot-service
+    restart: always
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
+      - TZ=Asia/Ho_Chi_Minh
+      - JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Ho_Chi_Minh
       # Truyen API Key cua Groq vao container
       - GROQ_API_KEY=${GROQ_API_KEY}
     depends_on:
       - discovery-server
+  techshop-frontend:
+    container_name: techshop-frontend
+    image: microservices-tutorial/techshop-frontend:latest
+    build: ./techshop-frontend
+    restart: always
+    ports:
+      - "5173:80"
+    depends_on:
+      - api-gateway

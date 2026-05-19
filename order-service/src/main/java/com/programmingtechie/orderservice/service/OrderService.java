@@ -22,6 +22,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -32,6 +33,8 @@ import java.util.UUID;
 @Transactional
 @Slf4j
 public class OrderService {
+
+    private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private final OrderRepository orderRepository;
     private final WebClient.Builder webClientBuilder;
@@ -50,7 +53,7 @@ public class OrderService {
         order.setPaymentMethod(orderRequest.getPaymentMethod());
         order.setCouponCode(orderRequest.getCouponCode());
         order.setStatus("PENDING");
-        order.setCreatedAt(LocalDateTime.now());
+        order.setCreatedAt(now());
 
         List<OrderLineItems> orderLineItems = orderRequest.getOrderLineItemsDtoList()
                 .stream()
@@ -76,19 +79,27 @@ public class OrderService {
         inventoryServiceObservation.lowCardinalityKeyValue("call", "inventory-service");
         return inventoryServiceObservation.observe(() -> {
             InventoryResponse[] inventoryResponseArray = webClientBuilder.build().get()
-                    .uri("http://inventory-service/api/inventory",
+                    .uri("http://inventory-service:8080/api/inventory",
                             uriBuilder -> uriBuilder.queryParam("skuCode", skuCodes).build())
                     .retrieve()
                     .bodyToMono(InventoryResponse[].class)
                     .block();
 
-            boolean allProductsInStock = Arrays.stream(inventoryResponseArray)
-                    .allMatch(InventoryResponse::isInStock);
+            List<String> inStockSkuCodes = Arrays.stream(inventoryResponseArray == null ? new InventoryResponse[0] : inventoryResponseArray)
+                    .filter(InventoryResponse::isInStock)
+                    .map(InventoryResponse::getSkuCode)
+                    .toList();
+            boolean allProductsInStock = skuCodes.stream().distinct().allMatch(inStockSkuCodes::contains);
 
             if (allProductsInStock) {
                 Order savedOrder = orderRepository.save(order);
-                // publish Order Placed Event
-                applicationEventPublisher.publishEvent(new OrderPlacedEvent(this, savedOrder.getOrderNumber()));
+                stockOut(savedOrder);
+                try {
+                    applicationEventPublisher.publishEvent(new OrderPlacedEvent(this, savedOrder.getOrderNumber()));
+                } catch (RuntimeException exception) {
+                    log.warn("Order was created but notification event could not be published: {}",
+                            savedOrder.getOrderNumber(), exception);
+                }
                 return mapToResponse(savedOrder);
             } else {
                 throw new IllegalArgumentException("Product is not in stock, please try again later");
@@ -190,7 +201,7 @@ public class OrderService {
         request.setReferenceNumber(order.getOrderNumber());
         request.setItems(order.getOrderLineItemsList().stream().map(this::mapLineItemToResponse).toList());
         webClientBuilder.build().post()
-                .uri("http://inventory-service/api/inventory/stock-out")
+                .uri("http://inventory-service:8080/api/inventory/stock-out")
                 .bodyValue(request)
                 .retrieve()
                 .toBodilessEntity()
@@ -225,5 +236,9 @@ public class OrderService {
 
     private BigDecimal defaultMoney(BigDecimal value) {
         return value == null ? BigDecimal.ZERO : value;
+    }
+
+    private LocalDateTime now() {
+        return LocalDateTime.now(VIETNAM_ZONE);
     }
 }

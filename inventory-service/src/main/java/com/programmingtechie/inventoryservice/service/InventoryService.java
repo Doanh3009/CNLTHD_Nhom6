@@ -19,6 +19,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ public class InventoryService {
     private static final String COMPLETED = "COMPLETED";
     private static final String IN = "IN";
     private static final String OUT = "OUT";
+    private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private final InventoryRepository inventoryRepository;
     private final ImportReceiptRepository importReceiptRepository;
@@ -43,13 +45,19 @@ public class InventoryService {
     @SneakyThrows
     public List<InventoryResponse> isInStock(List<String> skuCode) {
         log.info("Checking Inventory");
-        return inventoryRepository.findBySkuCodeIn(skuCode).stream()
-                .map(inventory ->
-                        InventoryResponse.builder()
-                                .skuCode(inventory.getSkuCode())
-                                .isInStock(inventory.getQuantity() > 0)
-                                .build()
-                ).toList();
+        Map<String, Inventory> stockBySku = new HashMap<>();
+        inventoryRepository.findBySkuCodeIn(skuCode)
+                .forEach(inventory -> stockBySku.put(inventory.getSkuCode(), inventory));
+        return skuCode.stream()
+                .distinct()
+                .map(code -> {
+                    Inventory inventory = stockBySku.get(code);
+                    return InventoryResponse.builder()
+                            .skuCode(code)
+                            .isInStock(inventory != null && defaultQuantity(inventory.getQuantity()) > 0)
+                            .build();
+                })
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -62,7 +70,7 @@ public class InventoryService {
     public ReceiptResponse createReceipt(ReceiptRequest request) {
         ImportReceipt receipt = new ImportReceipt();
         receipt.setReceiptNumber("PN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-        receipt.setImportDate(request.getImportDate() == null ? LocalDateTime.now() : request.getImportDate());
+        receipt.setImportDate(request.getImportDate() == null ? now() : request.getImportDate());
         receipt.setStatus(DRAFT);
         receipt.setNote(request.getNote());
         receipt.setItems(mapItems(request.getItems()));
@@ -86,7 +94,7 @@ public class InventoryService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Receipt already completed");
         }
         receipt.setStatus(COMPLETED);
-        receipt.setCompletedAt(LocalDateTime.now());
+        receipt.setCompletedAt(now());
 
         for (ImportReceiptItem item : receipt.getItems()) {
             Inventory inventory = inventoryRepository.findBySkuCode(item.getSkuCode())
@@ -109,7 +117,7 @@ public class InventoryService {
         if (referenceNumber != null && movementRepository.existsByReferenceNumberAndType(referenceNumber, OUT)) {
             return;
         }
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = now();
         for (ReceiptItemRequest item : request.getItems()) {
             Inventory inventory = inventoryRepository.findBySkuCode(item.getSkuCode())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing stock for " + item.getSkuCode()));
@@ -150,8 +158,8 @@ public class InventoryService {
 
     @Transactional(readOnly = true)
     public List<MovementResponse> getMovements(LocalDateTime from, LocalDateTime to) {
-        LocalDateTime start = from == null ? LocalDateTime.now().minusMonths(1) : from;
-        LocalDateTime end = to == null ? LocalDateTime.now() : to;
+        LocalDateTime start = from == null ? now().minusMonths(1) : from;
+        LocalDateTime end = to == null ? now() : to;
         return movementRepository.findByOccurredAtBetweenOrderByOccurredAtDesc(start, end).stream()
                 .map(this::mapMovement)
                 .toList();
@@ -245,5 +253,9 @@ public class InventoryService {
 
     private BigDecimal defaultMoney(BigDecimal value) {
         return value == null ? BigDecimal.ZERO : value;
+    }
+
+    private LocalDateTime now() {
+        return LocalDateTime.now(VIETNAM_ZONE);
     }
 }

@@ -41,6 +41,9 @@ public class AuthController {
 
         User user = findUser(loginRequest.getUsername());
         ensureUnlocked(user);
+        if ("ADMIN".equalsIgnoreCase(user.getRole())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tai khoan quan tri chi duoc dang nhap o trang admin");
+        }
         String jwt = tokenProvider.generateToken(user);
         return ResponseEntity.ok(new AuthResponse(jwt, "Dang nhap thanh cong", user.getUsername(), user.getRole()));
     }
@@ -63,6 +66,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody RegisterRequest registerRequest) {
+        validateAccount(registerRequest.getUsername(), registerRequest.getEmail(), registerRequest.getPassword());
         if (userRepository.existsByUsername(registerRequest.getUsername())) {
             return new ResponseEntity<>("Ten dang nhap da ton tai", HttpStatus.BAD_REQUEST);
         }
@@ -97,6 +101,7 @@ public class AuthController {
             @RequestBody AdminUserRequest request
     ) {
         requireAdmin(authorization);
+        validateAccount(request.getUsername(), request.getEmail(), request.getPassword());
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ten dang nhap da ton tai");
         }
@@ -107,7 +112,7 @@ public class AuthController {
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(normalizeRole(request.getRole()))
+                .role("USER")
                 .locked(false)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -152,8 +157,16 @@ public class AuthController {
         }
     }
 
-    private String normalizeRole(String role) {
-        return "ADMIN".equalsIgnoreCase(role) ? "ADMIN" : "USER";
+    private void validateAccount(String username, String email, String password) {
+        if (username == null || !username.matches("^[A-Za-z0-9_.-]{3,32}$")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ten dang nhap chi gom chu, so, dau . _ - va dai 3-32 ky tu");
+        }
+        if (email == null || !email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email khong hop le");
+        }
+        if (password == null || password.length() < 6 || password.length() > 72) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mat khau phai dai tu 6 den 72 ky tu");
+        }
     }
 
     private void requireAdmin(String authorization) {
@@ -167,4 +180,3 @@ public class AuthController {
         }
     }
 }
-

@@ -37,8 +37,14 @@ my-sql-data
 mongo-data
 /mysql_keycloak_data/
 /postgres/
+/postgres-auth/
 /postgres-inventory/
 /postgres-order/
 /grafana/
 .env
 node_modules/
+/techshop-frontend/dist/
+/techshop-frontend/.vite/
+hs_err_pid*.log
+KDKTechShop_report.*
+/reports/
