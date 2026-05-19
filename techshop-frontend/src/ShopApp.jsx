@@ -60,6 +60,13 @@ import {
   PRODUCT_META,
   QUICK_TAGS,
 } from './catalogData';
+import {
+  cleanLongText,
+  cleanPhone,
+  cleanShortText,
+  isValidDeliveryAddress,
+  isValidVietnamPhone,
+} from './shopValidation';
 
 const API_BASE = 'http://localhost:8181/api';
 
@@ -1181,15 +1188,6 @@ function totalsFor(cartSubtotal, couponCode) {
   const shippingFee = coupon?.freeShipping ? 0 : shipping;
   return { coupon, discount, shippingFee, total: Math.max(cartSubtotal - discount + shippingFee, 0) };
 }
-
-const cleanPhone = (value) => value.replace(/\D/g, '').slice(0, 10);
-const isValidVietnamPhone = (value) => /^0\d{9}$/.test(value);
-const isValidDeliveryAddress = (value) => {
-  const address = value.trim();
-  return address.length >= 8 && /\d/.test(address) && /[A-Za-zÀ-ỹ]/.test(address);
-};
-const cleanShortText = (value) => value.replace(/[<>]/g, '').slice(0, 120);
-const cleanLongText = (value) => value.replace(/[<>]/g, '').slice(0, 240);
 
 function CheckoutPage({ cart, subtotal, updateQty, removeItem, clearCart, addToast, text }) {
   const navigate = useNavigate();
